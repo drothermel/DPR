@@ -5,13 +5,14 @@
 # LICENSE file in the root directory of this source tree.
 
 
-from setuptools import setup
+from setuptools import setup, find_packages
 
 with open("README.md") as f:
     readme = f.read()
 
 setup(
     name="dpr",
+    packages=find_packages(exclude=["conf"]),
     version="1.0.0",
     description="Facebook AI Research Open Domain Q&A Toolkit",
     url="https://github.com/facebookresearch/DPR/",
