@@ -245,7 +245,24 @@ class BiEncoder(nn.Module):
         # if "question_model.embeddings.position_ids" in saved_state.model_dict:
         #    del saved_state.model_dict["question_model.embeddings.position_ids"]
         #    del saved_state.model_dict["ctx_model.embeddings.position_ids"]
-        self.load_state_dict(saved_state.model_dict, strict=strict)
+
+        # Longterm HF compatibility fix:
+        #   The actual BertModel ignores the "position_ids" key but since
+        #   we're just directly loading the state into the module  then 
+        #   we're not hitting check so do it manually
+        acceptable_missing = [
+            'question_model.embeddings.position_ids',
+            'ctx_model.embeddings.position_ids',
+        ]
+        missing, unexpected = self.load_state_dict(saved_state.model_dict, strict=False)
+        if len(missing) > 0:
+            print("Keys in local model but not in checkpoint:", missing)
+            extra_missing = set(missing) - set(acceptable_missing)
+            if len(extra_missing) > 0:
+                raise Exception(f"Unacceptable missing keys: {extra_missing}")
+        if len(unexpected) > 0:
+            raise Exception(f"Keys in checkpoint not in local model: {unexpected}")
+        
 
     def get_state_dict(self):
         return self.state_dict()
