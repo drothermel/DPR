@@ -226,10 +226,13 @@ class BiEncoderTrainer(object):
         self.biencoder.eval()
 
         if not self.dev_iterator:
+            logger.info(f"Dev batch size: {cfg.train.dev_batch_size}")
             self.dev_iterator = self.get_data_iterator(
                 cfg.train.dev_batch_size, False, shuffle=False, rank=cfg.local_rank
             )
         data_iterator = self.dev_iterator
+        logging.info("After dev iterator loaded?")
+        assert False
 
         total_loss = 0.0
         start_time = time.time()
