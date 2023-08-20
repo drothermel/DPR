@@ -587,6 +587,7 @@ def main(cfg: DictConfig):
             pattern_id_prefix = id_prefixes[i]
             input_paths.extend(pattern_files)
             path_id_prefixes.extend([pattern_id_prefix] * len(pattern_files))
+        input_paths = sorted(input_paths)
         logger.info("Embeddings files id prefixes: %s", path_id_prefixes)
         logger.info("Reading all passages data from files: %s", input_paths)
         retriever.index_encoded_data(input_paths, index_buffer_sz, path_id_prefixes=path_id_prefixes)
