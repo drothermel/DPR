@@ -388,6 +388,35 @@ RESOURCES_MAP = {
         "compressed": True,
         "desc": "Entire wikipedia passages set obtain by splitting all pages into 100-word segments (no overlap)",
     },
+    # From AmbigQA
+    'data.ambigqa.train': {
+        's3_url': 'https://nlp.cs.washington.edu/ambigqa/data/train.json',
+        'original_ext': '.json',
+        'compressed': False,
+        'desc': 'Train file for AmbigQA'
+    },
+
+    'data.ambigqa.dev': {
+        's3_url': 'https://nlp.cs.washington.edu/ambigqa/data/dev.json',
+        'original_ext': '.json',
+        'compressed': False,
+        'desc': 'Dev file for AmbigQA'
+    },
+    # From AmbigQA
+    'data.ambigqa_light.train': {
+        's3_url': 'https://nlp.cs.washington.edu/ambigqa/data/train_light.json',
+        'original_ext': '.json',
+        'compressed': False,
+        'desc': 'Train file for AmbigQA'
+    },
+
+    'data.ambigqa_light.dev': {
+        's3_url': 'https://nlp.cs.washington.edu/ambigqa/data/dev_light.json',
+        'original_ext': '.json',
+        'compressed': False,
+        'desc': 'Dev file for AmbigQA'
+    },
+
 }
 
 

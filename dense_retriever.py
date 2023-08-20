@@ -72,13 +72,14 @@ def generate_question_vectors(
                 batch_tensors = [tensorizer.text_to_tensor(q) for q in batch_questions]
 
             # TODO: this only works for Wav2vec pipeline but will crash the regular text pipeline
-            max_vector_len = max(q_t.size(1) for q_t in batch_tensors)
-            min_vector_len = min(q_t.size(1) for q_t in batch_tensors)
+            if len(batch_tensors) > 0 and batch_tensors[0].dim() > 1:
+                max_vector_len = max(q_t.size(1) for q_t in batch_tensors)
+                min_vector_len = min(q_t.size(1) for q_t in batch_tensors)
 
-            if max_vector_len != min_vector_len:
-                # TODO: _pad_to_len move to utils
-                from dpr.models.reader import _pad_to_len
-                batch_tensors = [_pad_to_len(q.squeeze(0), 0, max_vector_len) for q in batch_tensors]
+                if max_vector_len != min_vector_len:
+                    # TODO: _pad_to_len move to utils
+                    from dpr.models.reader import _pad_to_len
+                    batch_tensors = [_pad_to_len(q.squeeze(0), 0, max_vector_len) for q in batch_tensors]
 
             q_ids_batch = torch.stack(batch_tensors, dim=0).cuda()
             q_seg_batch = torch.zeros_like(q_ids_batch).cuda()
@@ -586,6 +587,7 @@ def main(cfg: DictConfig):
             pattern_id_prefix = id_prefixes[i]
             input_paths.extend(pattern_files)
             path_id_prefixes.extend([pattern_id_prefix] * len(pattern_files))
+        input_paths = sorted(input_paths)
         logger.info("Embeddings files id prefixes: %s", path_id_prefixes)
         logger.info("Reading all passages data from files: %s", input_paths)
         retriever.index_encoded_data(input_paths, index_buffer_sz, path_id_prefixes=path_id_prefixes)

@@ -199,22 +199,10 @@ SpanPrediction = collections.namedtuple(
         "relevance_score",
         "passage_index",
         "passage_token_ids",
-    ],
-)
-
-EvalSpanPrediction = collections.namedtuple(
-    "SpanPrediction",
-    [
-        "prediction_text",
-        "span_score",
-        "relevance_score",
-        "passage_index",
-        "passage_token_ids",
         "passage_id",
         "token_ind",
     ],
 )
-
 
 # configuration for reader model passage selection
 ReaderPreprocessingCfg = collections.namedtuple(
@@ -242,7 +230,7 @@ DEFAULT_PREPROCESSING_CFG_TRAIN = ReaderPreprocessingCfg(
     max_retriever_passages=200,
 )
 
-DEFAULT_EVAL_PASSAGES = 100
+DEFAULT_EVAL_PASSAGES = 100000
 
 
 def preprocess_retriever_data(
@@ -380,7 +368,8 @@ def convert_retriever_results(
     logger.info("Preprocessed data stored in %s", serialized_files)
     return serialized_files
 
-def get_best_spans_eval(
+
+def get_best_spans(
     tensorizer: Tensorizer,
     start_logits: List,
     end_logits: List,
@@ -392,7 +381,7 @@ def get_best_spans_eval(
     evcf=None,
     cid_range_dict=None,
     passage_id=None,
-) -> List[EvalSpanPrediction]:
+) -> List[SpanPrediction]:
     """
     Finds the best answer span for the extractive Q&A model
     """
@@ -458,60 +447,12 @@ def get_best_spans_eval(
         start_index, end_index = _extend_span_to_full_words(tensorizer, ctx_ids, (start_index, end_index))
 
         predicted_answer = tensorizer.to_string(ctx_ids[start_index : end_index + 1])
-        best_spans.append(EvalSpanPrediction(predicted_answer, score, relevance_score, passage_idx, ctx_ids, passage_id, tind))
+        best_spans.append(SpanPrediction(predicted_answer, score, relevance_score, passage_idx, ctx_ids, passage_id, tind))
         #best_span_print.append((predicted_answer, score))
         chosen_span_intervals.append((start_index, end_index))
 
         #if len(chosen_span_intervals) == top_spans:
         #    break
-    return best_spans
-
-def get_best_spans(
-    tensorizer: Tensorizer,
-    start_logits: List,
-    end_logits: List,
-    ctx_ids: List,
-    max_answer_length: int,
-    passage_idx: int,
-    relevance_score: float,
-    top_spans: int = 1,
-) -> List[SpanPrediction]:
-    """
-    Finds the best answer span for the extractive Q&A model
-    """
-    scores = []
-    for (i, s) in enumerate(start_logits):
-        for (j, e) in enumerate(end_logits[i : i + max_answer_length]):
-            scores.append(((i, i + j), s + e))
-
-    scores = sorted(scores, key=lambda x: x[1], reverse=True)
-
-    chosen_span_intervals = []
-    best_spans = []
-
-    for (start_index, end_index), score in scores:
-        assert start_index <= end_index
-        length = end_index - start_index + 1
-        assert length <= max_answer_length
-
-        if any(
-            [
-                start_index <= prev_start_index <= prev_end_index <= end_index
-                or prev_start_index <= start_index <= end_index <= prev_end_index
-                for (prev_start_index, prev_end_index) in chosen_span_intervals
-            ]
-        ):
-            continue
-
-        # extend bpe subtokens to full tokens
-        start_index, end_index = _extend_span_to_full_words(tensorizer, ctx_ids, (start_index, end_index))
-
-        predicted_answer = tensorizer.to_string(ctx_ids[start_index : end_index + 1])
-        best_spans.append(SpanPrediction(predicted_answer, score, relevance_score, passage_idx, ctx_ids))
-        chosen_span_intervals.append((start_index, end_index))
-
-        if len(chosen_span_intervals) == top_spans:
-            break
     return best_spans
 
 
@@ -566,14 +507,13 @@ def _select_reader_passages(
             ctx.answers_spans = answers_spans
 
             if not answers_spans:
-                pass
-                #logger.warning(
-                #    "No answer found in passage id=%s text=%s, answers=%s, question=%s",
-                #    ctx.id,
-                #    "",  # ctx.passage_text
-                #    answers,
-                #    question,
-                #)
+                logger.warning(
+                    "No answer found in passage id=%s text=%s, answers=%s, question=%s",
+                    ctx.id,
+                    "",  # ctx.passage_text
+                    answers,
+                    question,
+                )
             ctx.has_answer = bool(answers_spans)
         return ctx
 

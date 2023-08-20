@@ -33,3 +33,10 @@ curatedtrec_test:
   _target_: dpr.data.retriever_data.CsvQASrc
   file: data.retriever.qas.curatedtrec-test
 
+ambigqa_dev:
+  _target_: dpr.data.retriever_data.JsonlQASrc
+  file: "/scratch/ddr8143/multiqa/processed_datasets/bm25.ambigqa_light.dev.h100.jsonl"
+
+ambigqa_train:
+  _target_: dpr.data.retriever_data.JsonlQASrc
+  file: "/scratch/ddr8143/multiqa/processed_datasets/bm25.ambigqa_light.train.h100.jsonl"
