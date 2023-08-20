@@ -1,4 +1,10 @@
-# Dense Passage Retrieval
+# Fork README
+
+Useful branches:
+- maqa_reading_comp
+- set_pred_cpirc
+
+# Original README: Dense Passage Retrieval
 
 Dense Passage Retrieval (`DPR`) - is a set of tools and models for state-of-the-art open-domain Q&A research.
 It is based on the following paper:
