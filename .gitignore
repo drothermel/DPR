@@ -1,3 +1,9 @@
 dpr.egg-info/*
 build/*
 *.swp
+
+**__pycache__
+outputs/*
+*downloads
+*/downloads/*
+.ipynb_checkpoints
