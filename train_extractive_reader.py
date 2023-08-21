@@ -235,7 +235,8 @@ class ReaderTrainer(object):
                     input.input_ids, attn_mask, input.token_type_ids
                 )
 
-            batch_predictions = self._get_best_prediction(
+            #batch_predictions = self._get_best_prediction(
+            batch_predictions = self._get_all_spans_and_scores(
                 start_logits,
                 end_logits,
                 relevance_logits,
@@ -248,6 +249,8 @@ class ReaderTrainer(object):
             if (i + 1) % log_result_step == 0:
                 logger.info("Eval step: %d ", i)
 
+        return all_results
+        '''
         ems = defaultdict(list)
 
         for q_predictions in all_results:
@@ -265,6 +268,7 @@ class ReaderTrainer(object):
             self._save_predictions(cfg.prediction_results_file, all_results)
 
         return em
+        '''
 
     def _train_epoch(
         self,
@@ -403,6 +407,62 @@ class ReaderTrainer(object):
         if saved_state.optimizer_dict:
             self.optimizer.load_state_dict(saved_state.optimizer_dict)
         self.scheduler_state = saved_state.scheduler_dict
+
+    def _get_all_spans_and_scores(
+        self,
+        start_logits,
+        end_logits,
+        relevance_logits,
+        samples_batch: List[ReaderSample],
+        passage_thresholds: List[int] = None,
+    ):
+        cfg = self.cfg
+        max_answer_length = cfg.max_answer_length
+        questions_num, passages_per_question = relevance_logits.size()
+
+        _, idxs = torch.sort(
+            relevance_logits,
+            dim=1,
+            descending=True,
+        )
+
+        batch_results = []
+        for q in range(questions_num):
+            sample = samples_batch[q]
+            question_spans = []
+
+            non_empty_passages_num = len(sample.passages)
+            for p in range(passages_per_question):
+                passage_idx = idxs[q, p].item()
+                if passage_idx >= non_empty_passages_num:  # empty passage selected, skip
+                    continue
+                reader_passage = sample.passages[passage_idx]
+                sequence_ids = reader_passage.sequence_ids
+                sequence_len = sequence_ids.size(0)
+                # assuming question & title information is at the beginning of the sequence
+                passage_offset = reader_passage.passage_offset
+
+                p_start_logits = start_logits[q, passage_idx].tolist()[passage_offset:sequence_len]
+                p_end_logits = end_logits[q, passage_idx].tolist()[passage_offset:sequence_len]
+
+                ctx_ids = sequence_ids.tolist()[passage_offset:]
+                best_spans = get_best_spans(
+                    self.tensorizer,
+                    p_start_logits,
+                    p_end_logits,
+                    ctx_ids,
+                    max_answer_length,
+                    passage_idx,
+                    relevance_logits[q, passage_idx].item(),
+                    top_spans=10,
+                )
+                question_spans.extend(best_spans)
+                #if len(nbest) > 0 and not passage_thresholds:
+                #    break
+
+            batch_results.append(ReaderQuestionPredictions(sample.question, question_spans, sample.answers))
+        return batch_results
+
 
     def _get_best_prediction(
         self,
@@ -555,7 +615,11 @@ def main(cfg: DictConfig):
         trainer.run_train()
     elif cfg.dev_files:
         logger.info("No train files are specified. Run validation.")
-        trainer.validate()
+        all_results = trainer.validate()
+        with open('/scratch/ddr8143/set_pred/init_results.pkl', 'wb') as handle:
+            pickle.dump(all_results, handle)
+        logging.info(">> Logged results to: /scratch/ddr8143/set_pred/init_results.pkl")
+
     else:
         logger.warning("Neither train_file or (model_file & dev_file) parameters are specified. Nothing to do.")
 

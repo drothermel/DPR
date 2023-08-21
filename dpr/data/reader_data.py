@@ -395,14 +395,14 @@ def get_best_spans(
         length = end_index - start_index + 1
         assert length <= max_answer_length
 
-        if any(
-            [
-                start_index <= prev_start_index <= prev_end_index <= end_index
-                or prev_start_index <= start_index <= end_index <= prev_end_index
-                for (prev_start_index, prev_end_index) in chosen_span_intervals
-            ]
-        ):
-            continue
+        #if any(
+        #    [
+        #        start_index <= prev_start_index <= prev_end_index <= end_index
+        #        or prev_start_index <= start_index <= end_index <= prev_end_index
+        #        for (prev_start_index, prev_end_index) in chosen_span_intervals
+        #    ]
+        #):
+        #    continue
 
         # extend bpe subtokens to full tokens
         start_index, end_index = _extend_span_to_full_words(tensorizer, ctx_ids, (start_index, end_index))
@@ -411,8 +411,8 @@ def get_best_spans(
         best_spans.append(SpanPrediction(predicted_answer, score, relevance_score, passage_idx, ctx_ids))
         chosen_span_intervals.append((start_index, end_index))
 
-        if len(chosen_span_intervals) == top_spans:
-            break
+        #if len(chosen_span_intervals) == top_spans:
+        #    break
     return best_spans
 
 
