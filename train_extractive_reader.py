@@ -14,6 +14,7 @@ import collections
 import json
 import sys
 
+import pickle
 import hydra
 import logging
 import numpy as np
@@ -595,6 +596,16 @@ class ReaderTrainer(object):
                 )
             output.write(json.dumps(save_results, indent=4) + "\n")
 
+def dump_validation_results(results, outpath):
+    dict_data = []
+    for rd in results:
+        new_rd = rd._asdict()
+        new_rd['predictions'] = [pd._asdict() for pd in new_rd['predictions']]
+        dict_data.append(new_rd)
+    with open(outpath, 'wb') as handle:
+        pickle.dump(dict_data, handle)
+    logging.info(f">> Logged results to: {outpath}")
+    
 
 @hydra.main(config_path="conf", config_name="extractive_reader_train_cfg")
 def main(cfg: DictConfig):
@@ -615,11 +626,8 @@ def main(cfg: DictConfig):
         trainer.run_train()
     elif cfg.dev_files:
         logger.info("No train files are specified. Run validation.")
-        all_results = trainer.validate()
-        with open('/scratch/ddr8143/set_pred/init_results.pkl', 'wb') as handle:
-            pickle.dump(all_results, handle)
-        logging.info(">> Logged results to: /scratch/ddr8143/set_pred/init_results.pkl")
-
+        results = trainer.validate()
+        dump_validation_results(results, cfg.prediction_results_file)
     else:
         logger.warning("Neither train_file or (model_file & dev_file) parameters are specified. Nothing to do.")
 

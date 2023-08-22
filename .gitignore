@@ -1,6 +1,7 @@
 dpr.egg-info/*
 build/*
 *.swp
+*.out
 
 **__pycache__
 outputs/*
