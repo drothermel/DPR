@@ -5,6 +5,10 @@ defaults:
   - train: biencoder_default
   - datasets: encoder_train_default
 
+hydra:
+    run:
+        dir: ${output_dir}
+
 train_datasets:
 dev_datasets:
 output_dir:
